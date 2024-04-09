@@ -1,0 +1,9 @@
+{
+    "instanceUrl": "https://msazure.visualstudio.com",
+    "projectName": "One",
+    "areaPath": "OS\\Windows Client and Services\\ADEPT\\E4D-Engineered for Developers\\SHINE",
+    "notificationAliases": [
+        "cazamor@microsoft.com",
+        "duhowett@microsoft.com"
+    ]
+}

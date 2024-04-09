@@ -7,7 +7,8 @@
     Description = 'Enable suggestions on how to install missing commands via winget'
     PowerShellVersion = '7.4'
 
-    NestedModules = @('ValidateOS.psm1', 'winget-command-not-found.dll')
+    #NestedModules = @('ValidateOS.psm1', 'winget-command-not-found.dll')
+    NestedModules = @('winget-command-not-found.dll')
     FunctionsToExport = @()
     CmdletsToExport = @()
     VariablesToExport = '*'

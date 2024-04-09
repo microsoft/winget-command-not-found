@@ -10,6 +10,10 @@
 
         <!-- Deploy the produced assembly -->
         <PublishDir>..\bin\winget-command-not-found</PublishDir>
+
+        <!-- TODO CARLOS: Do we want a root namespace or assembly name in the Microsoft scope? -->
+        <!-- <RootNamespace>Microsoft.PowerShell.PSReadLine</RootNamespace>
+        <AssemblyName>Microsoft.PowerShell.PSReadLine2</AssemblyName> -->
       </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -19,7 +23,9 @@
       </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.3">
+        <!-- PowerShell 7.4 already ships with an old version of Microsoft.Extensions.ObjectPool,
+             so don't use the latest version -->
+        <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="[5.0.17]">
             <ExcludeAssets>contentFiles</ExcludeAssets>
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; compile; build; native; analyzers; buildtransitive</IncludeAssets>

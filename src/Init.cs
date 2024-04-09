@@ -11,7 +11,7 @@ namespace WinGetCommandNotFound
 {
     public sealed class Init : IModuleAssemblyInitializer, IModuleAssemblyCleanup
     {
-        internal const string Id = "e5351aa4-dfde-4d4d-bf0f-1a2f5a37d8d6";
+        internal const string Id = "09cd038b-a75f-4d91-8f71-f29e1ab480dc";
 
         public void OnImport()
         {
@@ -26,7 +26,7 @@ namespace WinGetCommandNotFound
 
         public void OnRemove(PSModuleInfo psModuleInfo)
         {
-            if (!IsWinGetInstalled())
+            if (!Platform.IsWindows || !IsWinGetInstalled())
             {
                 return;
             }
@@ -42,7 +42,6 @@ namespace WinGetCommandNotFound
             {
                 var results = pwsh.AddCommand("Get-Command")
                     .AddParameter("Name", "winget")
-                    .AddParameter("CommandType", "Application")
                     .Invoke();
 
                 if (results.Count is 0)
