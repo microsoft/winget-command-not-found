@@ -212,9 +212,13 @@ extends:
 
         - pwsh: |
             try {
-              $RepoName = "PSRLLocal"
-              Register-PSRepository -Name $RepoName -SourceLocation $(nugetPath) -PublishLocation $(nugetPath) -InstallationPolicy Trusted
-              Publish-Module -Repository $RepoName -Path $(signOutPath)
+              Install-Module -Name Microsoft.PowerShell.PSResourceGet -Scope CurrentUser -Force
+              $RepoName = "WCNFLocal"
+              mkdir $(nugetPath) -ErrorAction SilentlyContinue
+              Register-PSResourceRepository -Name $RepoName -Uri $(nugetPath) -Trusted
+              # -SkipModuleManifestValidate: module needs Pwsh 7.4 but machine is on an earlier version
+              # -SkipDependenciesCheck: module depends on Microsoft.WinGet.Client which will definitely be available on PSGallery
+              Publish-PSResource -Verbose -Path $(signOutPath) -Repository $RepoName -SkipModuleManifestValidate -SkipDependenciesCheck
             } finally {
               Unregister-PSRepository -Name $RepoName -ErrorAction SilentlyContinue
             }

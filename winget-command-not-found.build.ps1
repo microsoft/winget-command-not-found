@@ -50,7 +50,7 @@ $binaryModuleParams = @{
 Synopsis: Build main binary module
 #>
 task BuildMainModule @binaryModuleParams {
-    exec { dotnet publish -f $Framework -c $Configuration winget-command-not-found }
+    exec { dotnet publish -f $Framework -c $Configuration src/winget-command-not-found.csproj }
 }
 
 <#
@@ -61,7 +61,7 @@ task LayoutModule BuildMainModule, {
         New-Item $targetDir -ItemType Directory -Force > $null
     }
 
-    $extraFiles = @('License.txt')
+    $extraFiles = @('LICENSE')
 
     foreach ($file in $extraFiles) {
         # ensure files have \r\n line endings as the signing tool only uses those endings to avoid mixed endings
@@ -69,7 +69,7 @@ task LayoutModule BuildMainModule, {
         Set-Content -Path (Join-Path $targetDir (Split-Path $file -Leaf)) -Value (ConvertTo-CRLF $content) -Force
     }
 
-    $binPath = "winget-command-not-found/bin/$Configuration/$Framework/publish"
+    $binPath = "src/bin/$Configuration/$Framework"
     Copy-Item $binPath/winget-command-not-found.dll $targetDir
     Copy-Item $binPath/ValidateOS.psm1 $targetDir
 
@@ -81,22 +81,7 @@ task LayoutModule BuildMainModule, {
     $moduleManifestContent = ConvertTo-CRLF (Get-Content -Path 'src/winget-command-not-found.psd1' -Raw)
     $versionInfo = (Get-ChildItem -Path $targetDir/winget-command-not-found.dll).VersionInfo
     $version = $versionInfo.FileVersion
-    $semVer = $versionInfo.ProductVersion
 
-    # dotnet build may add the Git commit hash to the 'ProductVersion' attribute with this format: +<commit-hash>.
-    if ($semVer -match "(.*)-([^\+]*)(?:\+.*)?") {
-        # Make sure versions match
-        if ($matches[1] -ne $version) { throw "AssemblyFileVersion mismatch with AssemblyInformationalVersion" }
-        $prerelease = $matches[2]
-
-        # Put the prerelease tag in private data, along with the project URI.
-        $privateDataSection = "PrivateData = @{ PSData = @{ Prerelease = '$prerelease'; ProjectUri = 'https://github.com/Microsoft/winget-command-not-found' } }"
-    } else {
-        # Put the project URI in private data.
-        $privateDataSection = "PrivateData = @{ PSData = @{ ProjectUri = 'https://github.com/Microsoft/winget-command-not-found' } }"
-    }
-
-    $moduleManifestContent = [regex]::Replace($moduleManifestContent, "}", "${privateDataSection}$([System.Environment]::Newline)}")
     $moduleManifestContent = [regex]::Replace($moduleManifestContent, "ModuleVersion = '.*'", "ModuleVersion = '$version'")
     $moduleManifestContent | Set-Content -Path $targetDir/winget-command-not-found.psd1
 
