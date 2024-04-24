@@ -40,7 +40,7 @@ param(
     [string] $Configuration = "Debug",
 
     [ValidateSet("net8.0")]
-    [string] $Framework
+    [string] $Framework = "net8.0"
 )
 
 # Clean step
