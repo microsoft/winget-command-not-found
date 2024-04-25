@@ -13,7 +13,7 @@
     VariablesToExport = '*'
     AliasesToExport = @()
 
-    RequiredModules   = @(@{ModuleName = 'Microsoft.WinGet.Client';  ModuleVersion = "0.2.1"; })
+    RequiredModules   = @(@{ModuleName = 'Microsoft.WinGet.Client'; RequiredVersion = "1.8.1133"; })
 
     PrivateData = @{
         PSData = @{
