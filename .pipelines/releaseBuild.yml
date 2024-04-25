@@ -59,11 +59,11 @@ extends:
         - name: ob_outputDirectory
           value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         - name: repoRoot
-          value: $(Build.SourcesDirectory)\winget-command-not-found
+          value: $(Build.SourcesDirectory)
         - name: ob_sdl_tsa_configFile
           value: $(repoRoot)\.config\tsaoptions.json
         - name: signSrcPath
-          value: $(repoRoot)\bin\Release\winget-command-not-found # TODO CARLOS: update build output to be this(?)
+          value: $(repoRoot)\bin\Release\winget-command-not-found
         - name: ob_sdl_sbom_enabled
           value: true
         - name: ob_signing_setup_enabled
@@ -75,11 +75,6 @@ extends:
         pool:
           type: windows
         steps:
-        - checkout: self
-          env:
-            # Set ob_restore_phase to run this step before '🔒 Setup Signing' step.
-            ob_restore_phase: true
-
         - pwsh: |
             if (-not (Test-Path $(repoRoot)/.config/tsaoptions.json)) {
               throw "tsaoptions.json does not exist under $(repoRoot)/.config"
@@ -178,7 +173,7 @@ extends:
           - name: ob_outputDirectory
             value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
           - name: repoRoot
-            value: $(Build.SourcesDirectory)\winget-command-not-found
+            value: $(Build.SourcesDirectory)
           - name: ob_sdl_tsa_configFile
             value: $(repoRoot)\.config\tsaoptions.json
           # Disable because SBOM was already built in the previous job
@@ -197,8 +192,6 @@ extends:
         pool:
           type: windows
         steps:
-        - checkout: self
-
         - task: DownloadPipelineArtifact@2
           displayName: 'Download build files'
           inputs:
