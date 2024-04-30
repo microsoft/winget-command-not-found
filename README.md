@@ -40,7 +40,7 @@ trademarks or logos is subject to and must follow
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
 
-[command-line-predictor]: https://learn.microsoft.com/en-us/powershell/scripting/learn/shell/using-predictors?view=powershell-7.3
+[command-line-predictor]: https://learn.microsoft.com/en-us/powershell/scripting/learn/shell/using-predictors
 [psreadline-226]: https://www.powershellgallery.com/packages/PSReadLine/2.2.6
 [subsystem-plugin-model]: https://docs.microsoft.com/powershell/scripting/learn/experimental-features#pssubsystempluginmodel
 [how-to-create-predictor]: https://docs.microsoft.com/powershell/scripting/dev-cross-plat/create-cmdline-predictor
