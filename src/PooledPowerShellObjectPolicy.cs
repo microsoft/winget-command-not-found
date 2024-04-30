@@ -6,20 +6,20 @@ using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using Microsoft.Extensions.ObjectPool;
 
-namespace WinGetCommandNotFound
+namespace Microsoft.WinGet.CommandNotFound
 {
-    public sealed class PooledPowerShellObjectPolicy : IPooledObjectPolicy<PowerShell>
+    public sealed class PooledPowerShellObjectPolicy : IPooledObjectPolicy<System.Management.Automation.PowerShell>
     {
         private static readonly string[] WingetClientModuleName = new[] { "Microsoft.WinGet.Client" };
 
-        public PowerShell Create()
+        public System.Management.Automation.PowerShell Create()
         {
             var iss = InitialSessionState.CreateDefault2();
             iss.ImportPSModule(WingetClientModuleName);
-            return PowerShell.Create(iss);
+            return System.Management.Automation.PowerShell.Create(iss);
         }
 
-        public bool Return(PowerShell obj)
+        public bool Return(System.Management.Automation.PowerShell obj)
         {
             if (obj != null)
             {

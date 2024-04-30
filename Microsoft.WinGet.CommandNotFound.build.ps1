@@ -28,7 +28,7 @@ param(
 Import-Module "$PSScriptRoot/tools/helper.psm1"
 
 # Final bits to release go here
-$targetDir = "bin/$Configuration/winget-command-not-found"
+$targetDir = "bin/$Configuration/Microsoft.WinGet.CommandNotFound"
 
 if (-not $Framework)
 {
@@ -42,15 +42,15 @@ function ConvertTo-CRLF([string] $text) {
 }
 
 $binaryModuleParams = @{
-    Inputs  = { Get-ChildItem src/*.cs, src/winget-command-not-found.csproj }
-    Outputs = "src/bin/$Configuration/$Framework/winget-command-not-found.dll"
+    Inputs  = { Get-ChildItem src/*.cs, src/Microsoft.WinGet.CommandNotFound.csproj }
+    Outputs = "src/bin/$Configuration/$Framework/Microsoft.WinGet.CommandNotFound.dll"
 }
 
 <#
 Synopsis: Build main binary module
 #>
 task BuildMainModule @binaryModuleParams {
-    exec { dotnet publish -f $Framework -c $Configuration src/winget-command-not-found.csproj }
+    exec { dotnet publish -f $Framework -c $Configuration src/Microsoft.WinGet.CommandNotFound.csproj }
 }
 
 <#
@@ -70,7 +70,7 @@ task LayoutModule BuildMainModule, {
     }
 
     $binPath = "src/bin/$Configuration/$Framework"
-    Copy-Item $binPath/winget-command-not-found.dll $targetDir
+    Copy-Item $binPath/Microsoft.WinGet.CommandNotFound.dll $targetDir
     Copy-Item $binPath/ValidateOS.psm1 $targetDir
 
     if ($Configuration -eq 'Debug') {
@@ -78,12 +78,12 @@ task LayoutModule BuildMainModule, {
     }
 
     # Copy module manifest, but fix the version to match what we've specified in the binary module.
-    $moduleManifestContent = ConvertTo-CRLF (Get-Content -Path 'src/winget-command-not-found.psd1' -Raw)
-    $versionInfo = (Get-ChildItem -Path $targetDir/winget-command-not-found.dll).VersionInfo
+    $moduleManifestContent = ConvertTo-CRLF (Get-Content -Path 'src/Microsoft.WinGet.CommandNotFound.psd1' -Raw)
+    $versionInfo = (Get-ChildItem -Path $targetDir/Microsoft.WinGet.CommandNotFound.dll).VersionInfo
     $version = $versionInfo.FileVersion
 
     $moduleManifestContent = [regex]::Replace($moduleManifestContent, "ModuleVersion = '.*'", "ModuleVersion = '$version'")
-    $moduleManifestContent | Set-Content -Path $targetDir/winget-command-not-found.psd1
+    $moduleManifestContent | Set-Content -Path $targetDir/Microsoft.WinGet.CommandNotFound.psd1
 
     # Make sure we don't ship any read-only files
     foreach ($file in (Get-ChildItem -Recurse -File $targetDir)) {
@@ -95,11 +95,11 @@ task LayoutModule BuildMainModule, {
 Synopsis: Zip up the binary for release.
 #>
 task ZipRelease LayoutModule, {
-    Compress-Archive -Force -LiteralPath $targetDir -DestinationPath "bin/$Configuration/winget-command-not-found.zip"
+    Compress-Archive -Force -LiteralPath $targetDir -DestinationPath "bin/$Configuration/Microsoft.WinGet.CommandNotFound.zip"
 }
 
 <#
-Synopsis: Install newly built winget-command-not-found
+Synopsis: Install newly built Microsoft.WinGet.CommandNotFound
 #>
 task Install LayoutModule, {
 
@@ -111,9 +111,9 @@ task Install LayoutModule, {
 
         try
         {
-            if (Test-Path -Path $InstallDir\winget-command-not-found)
+            if (Test-Path -Path $InstallDir\Microsoft.WinGet.CommandNotFound)
             {
-                Remove-Item -Recurse -Force $InstallDir\winget-command-not-found -ErrorAction Stop
+                Remove-Item -Recurse -Force $InstallDir\Microsoft.WinGet.CommandNotFound -ErrorAction Stop
             }
             Copy-Item -Recurse $targetDir $InstallDir
         }
@@ -131,7 +131,7 @@ Synopsis: Publish to PSGallery
 #>
 task Publish -If ($Configuration -eq 'Release') {
 
-    $binDir = "$PSScriptRoot/bin/Release/winget-command-not-found"
+    $binDir = "$PSScriptRoot/bin/Release/Microsoft.WinGet.CommandNotFound"
 
     # Check signatures before publishing
     Get-ChildItem -Recurse $binDir -Include "*.dll","*.ps*1" | Get-AuthenticodeSignature | ForEach-Object {
@@ -155,7 +155,7 @@ task Publish -If ($Configuration -eq 'Release') {
         }
     }
 
-    $manifest = Import-PowerShellDataFile $binDir/winget-command-not-found.psd1
+    $manifest = Import-PowerShellDataFile $binDir/Microsoft.WinGet.CommandNotFound.psd1
 
     $version = $manifest.ModuleVersion
     if ($null -ne $manifest.PrivateData)
@@ -182,7 +182,7 @@ task Publish -If ($Configuration -eq 'Release') {
         NuGetApiKey = [PSCredential]::new("user", $nugetApiKey).GetNetworkCredential().Password
         Repository = "PSGallery"
         ReleaseNotes = (Get-Content -Raw $binDir/Changes.txt)
-        ProjectUri = 'https://github.com/Microsoft/winget-command-not-found'
+        ProjectUri = 'https://github.com/Microsoft/Microsoft.WinGet.CommandNotFound'
     }
 
     Publish-Module @publishParams

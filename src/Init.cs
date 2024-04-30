@@ -7,7 +7,7 @@ using System.Management.Automation.Subsystem;
 using System.Management.Automation.Subsystem.Feedback;
 using System.Management.Automation.Subsystem.Prediction;
 
-namespace WinGetCommandNotFound
+namespace Microsoft.WinGet.CommandNotFound
 {
     public sealed class Init : IModuleAssemblyInitializer, IModuleAssemblyCleanup
     {
@@ -38,7 +38,7 @@ namespace WinGetCommandNotFound
         private bool IsWinGetInstalled()
         {
             // Ensure WinGet is installed
-            using (var pwsh = PowerShell.Create(RunspaceMode.CurrentRunspace))
+            using (var pwsh = System.Management.Automation.PowerShell.Create(RunspaceMode.CurrentRunspace))
             {
                 var results = pwsh.AddCommand("Get-Command")
                     .AddParameter("Name", "winget")

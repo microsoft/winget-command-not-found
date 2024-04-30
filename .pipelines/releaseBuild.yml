@@ -8,7 +8,7 @@
 # Support:        https://aka.ms/onebranchsup                                   #
 #################################################################################
 
-name: winget-command-not-found-ModuleBuild-$(Build.BuildId)
+name: Microsoft.WinGet.CommandNotFound-ModuleBuild-$(Build.BuildId)
 trigger: none
 pr: none
 
@@ -34,7 +34,7 @@ extends:
       disableLegacyManifest: true
       sbom:
         enabled: true
-        packageName: winget-command-not-found
+        packageName: Microsoft.WinGet.CommandNotFound
       codeql:
         compiled:
           enabled: true
@@ -43,7 +43,7 @@ extends:
         forStages: [Build]
         credscan:
           enabled: true
-          scanFolder:  $(Build.SourcesDirectory)\winget-command-not-found\src
+          scanFolder:  $(Build.SourcesDirectory)\Microsoft.WinGet.CommandNotFound\src
         binskim:
           enabled: true
         apiscan:
@@ -51,10 +51,10 @@ extends:
 
     stages:
     - stage: buildstage
-      displayName: Build and Sign winget-command-not-found
+      displayName: Build and Sign Microsoft.WinGet.CommandNotFound
       jobs:
       - job: buildjob
-        displayName: Build winget-command-not-found Files
+        displayName: Build Microsoft.WinGet.CommandNotFound Files
         variables:
         - name: ob_outputDirectory
           value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
@@ -63,7 +63,7 @@ extends:
         - name: ob_sdl_tsa_configFile
           value: $(repoRoot)\.config\tsaoptions.json
         - name: signSrcPath
-          value: $(repoRoot)\bin\Release\winget-command-not-found
+          value: $(repoRoot)\bin\Release\Microsoft.WinGet.CommandNotFound
         - name: ob_sdl_sbom_enabled
           value: true
         - name: ob_signing_setup_enabled
@@ -124,7 +124,7 @@ extends:
           inputs:
             command: 'sign'
             signing_profile: external_distribution
-            files_to_sign: '*.psd1;*.psm1;*.ps1;*.ps1xml;**\Microsoft*.dll;winget-command-not-found.dll'
+            files_to_sign: '*.psd1;*.psm1;*.ps1;*.ps1xml;**\Microsoft*.dll;Microsoft.WinGet.CommandNotFound.dll'
             search_root: $(signSrcPath)
 
         # Verify the signatures
@@ -158,7 +158,7 @@ extends:
             TargetFolder: $(ob_outputDirectory)
 
         - pwsh: |
-            $versionInfo = Get-Item "$(signSrcPath)\winget-command-not-found.dll" | ForEach-Object VersionInfo
+            $versionInfo = Get-Item "$(signSrcPath)\Microsoft.WinGet.CommandNotFound.dll" | ForEach-Object VersionInfo
             $moduleVersion = $versionInfo.ProductVersion.Split('+')[0]
             $vstsCommandString = "vso[task.setvariable variable=ob_sdl_sbom_packageversion]${moduleVersion}"
 
@@ -168,7 +168,7 @@ extends:
 
       - job: nupkg
         dependsOn: buildjob
-        displayName: Package winget-command-not-found module
+        displayName: Package Microsoft.WinGet.CommandNotFound module
         variables:
           - name: ob_outputDirectory
             value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
@@ -180,7 +180,7 @@ extends:
           - name: ob_sdl_sbom_enabled
             value: false
           - name: signOutPath
-            value: $(repoRoot)\signed\winget-command-not-found
+            value: $(repoRoot)\signed\Microsoft.WinGet.CommandNotFound
           - name: nugetPath
             value: $(repoRoot)\signed\NuGetPackage
           - name: ob_signing_setup_enabled

@@ -10,13 +10,13 @@ using System.Management.Automation.Subsystem.Feedback;
 using System.Management.Automation.Subsystem.Prediction;
 using Microsoft.Extensions.ObjectPool;
 
-namespace WinGetCommandNotFound
+namespace Microsoft.WinGet.CommandNotFound
 {
     public sealed class WinGetCommandNotFoundFeedbackPredictor : IFeedbackProvider, ICommandPredictor
     {
         private readonly Guid _guid;
 
-        private readonly ObjectPool<PowerShell> _pool;
+        private readonly ObjectPool<System.Management.Automation.PowerShell> _pool;
 
         private const int _maxSuggestions = 20;
 

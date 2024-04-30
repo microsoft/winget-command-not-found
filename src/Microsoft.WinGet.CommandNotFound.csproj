@@ -9,11 +9,10 @@
         <GenerateDependencyFile>false</GenerateDependencyFile>
 
         <!-- Deploy the produced assembly -->
-        <PublishDir>..\bin\winget-command-not-found</PublishDir>
+        <PublishDir>..\bin\Microsoft.WinGet.CommandNotFound</PublishDir>
 
-        <!-- TODO CARLOS: Do we want a root namespace or assembly name in the Microsoft scope? -->
-        <!-- <RootNamespace>Microsoft.PowerShell.PSReadLine</RootNamespace>
-        <AssemblyName>Microsoft.PowerShell.PSReadLine2</AssemblyName> -->
+        <RootNamespace>Microsoft.WinGet.CommandNotFound</RootNamespace>
+        <AssemblyName>Microsoft.WinGet.CommandNotFound</AssemblyName>
       </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -35,7 +34,7 @@
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; compile; build; native; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <Content Include="winget-command-not-found.psd1;ValidateOS.psm1">
+        <Content Include="Microsoft.WinGet.CommandNotFound.psd1;ValidateOS.psm1">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
           <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         </Content>
