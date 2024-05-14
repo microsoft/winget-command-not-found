@@ -6,34 +6,32 @@ using System.Collections;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Management.Automation;
+using System.Management.Automation.Subsystem;
 using System.Management.Automation.Subsystem.Feedback;
 using System.Management.Automation.Subsystem.Prediction;
 using Microsoft.Extensions.ObjectPool;
 
 namespace Microsoft.WinGet.CommandNotFound
 {
-    public sealed class WinGetCommandNotFoundFeedbackPredictor : IFeedbackProvider, ICommandPredictor
+    public sealed class WinGetCommandNotFoundFeedbackPredictor : IFeedbackProvider, ICommandPredictor, IModuleAssemblyInitializer, IModuleAssemblyCleanup
     {
-        private readonly Guid _guid;
+        private readonly Guid _guid = new Guid("09cd038b-a75f-4d91-8f71-f29e1ab480dc");
 
         private readonly ObjectPool<System.Management.Automation.PowerShell> _pool;
 
         private const int _maxSuggestions = 20;
 
-        private List<string>? _candidates;
+        private List<string> _candidates = new List<string>();
 
         private bool _warmedUp;
 
-        public static WinGetCommandNotFoundFeedbackPredictor Singleton { get; } = new WinGetCommandNotFoundFeedbackPredictor(Init.Id);
+        private readonly StreamWriter _debugFile = new StreamWriter("C:\\Users\\cazamor\\Downloads\\winget-command-not-found.log");
 
-        private WinGetCommandNotFoundFeedbackPredictor(string guid)
+        private WinGetCommandNotFoundFeedbackPredictor()
         {
-            _guid = new Guid(guid);
-
             var provider = new DefaultObjectPoolProvider();
             _pool = provider.Create(new PooledPowerShellObjectPolicy());
             _pool.Return(_pool.Get());
-            Task.Run(() => WarmUp());
         }
 
         public Guid Id => _guid;
@@ -44,14 +42,14 @@ namespace Microsoft.WinGet.CommandNotFound
 
         public Dictionary<string, string>? FunctionsToDefine => null;
 
-        private void WarmUp()
+        private async void WarmUp()
         {
             var ps = _pool.Get();
             try
             {
-                ps.AddCommand("Find-WinGetPackage")
+                await ps.AddCommand("Find-WinGetPackage")
                     .AddParameter("Count", 1)
-                    .Invoke();
+                    .InvokeAsync();
             }
             finally
             {
@@ -60,55 +58,100 @@ namespace Microsoft.WinGet.CommandNotFound
             }
         }
 
+        public void OnImport()
+        {
+            if (!Platform.IsWindows || !IsWinGetInstalled())
+            {
+                return;
+            }
+
+            WarmUp();
+
+            SubsystemManager.RegisterSubsystem(SubsystemKind.FeedbackProvider, this);
+            SubsystemManager.RegisterSubsystem(SubsystemKind.CommandPredictor, this);
+        }
+
+        public void OnRemove(PSModuleInfo psModuleInfo)
+        {
+            if (!Platform.IsWindows || !IsWinGetInstalled())
+            {
+                return;
+            }
+
+            SubsystemManager.UnregisterSubsystem<IFeedbackProvider>(Id);
+            SubsystemManager.UnregisterSubsystem<ICommandPredictor>(Id);
+        }
+
+        private bool IsWinGetInstalled()
+        {
+            // Ensure WinGet is installed
+            using (var pwsh = System.Management.Automation.PowerShell.Create(RunspaceMode.CurrentRunspace))
+            {
+                var results = pwsh.AddCommand("Get-Command")
+                    .AddParameter("Name", "winget")
+                    .Invoke();
+
+                if (results.Count is 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Gets feedback based on the given commandline and error record.
         /// </summary>
         public FeedbackItem? GetFeedback(FeedbackContext context, CancellationToken token)
         {
             var target = (string)context.LastError!.TargetObject;
-            if (target is not null)
+            if (target is null)
             {
-                try
-                {
-                    bool tooManySuggestions = false;
-                    string packageMatchFilterField = "command";
-                    var pkgList = FindPackages(target, ref tooManySuggestions, ref packageMatchFilterField);
-                    if (pkgList.Count == 0)
-                    {
-                        return null;
-                    }
-
-                    // Build list of suggestions
-                    _candidates = new List<string>();
-                    foreach (var pkg in pkgList)
-                    {
-                        _candidates.Add(string.Format(CultureInfo.InvariantCulture, "winget install --id {0}", pkg.Members["Id"].Value.ToString()));
-                    }
-
-                    // Build footer message
-                    var footerMessage = tooManySuggestions ?
-                        string.Format(CultureInfo.InvariantCulture, "Additional results can be found using \"winget search --{0} {1}\"", packageMatchFilterField, target) :
-                        null;
-
-                    return new FeedbackItem(
-                        "Try installing this package using winget:",
-                        _candidates,
-                        footerMessage,
-                        FeedbackDisplayLayout.Portrait);
-                }
-                catch (Exception /*ex*/)
-                {
-                    return new FeedbackItem($"Failed to execute WinGet Command Not Found.{Environment.NewLine}This is a known issue if PowerShell 7 is installed from the Store or MSIX. If that isn't your case, please report an issue.", new List<string>(), FeedbackDisplayLayout.Portrait);
-                }
+                return null;
             }
 
-            return null;
+            try
+            {
+                bool tooManySuggestions = false;
+                string packageMatchFilterField = "command";
+                var pkgList = FindPackages(target, ref tooManySuggestions, ref packageMatchFilterField);
+                if (pkgList.Count == 0)
+                {
+                    return null;
+                }
+
+                // Build list of suggestions
+                _candidates.Clear();
+                foreach (var pkg in pkgList)
+                {
+                    _candidates.Add(string.Format(CultureInfo.InvariantCulture, "winget install --id {0}", pkg.Members["Id"].Value.ToString()));
+                }
+
+                // Build footer message
+                var footerMessage = tooManySuggestions ?
+                    string.Format(CultureInfo.InvariantCulture, "Additional results can be found using \"winget search --{0} {1}\"", packageMatchFilterField, target) :
+                    null;
+
+                return new FeedbackItem(
+                    "Try installing this package using winget:",
+                    _candidates,
+                    footerMessage,
+                    FeedbackDisplayLayout.Portrait);
+            }
+            catch (Exception /*ex*/)
+            {
+                return new FeedbackItem($"Failed to execute WinGet Command Not Found.{Environment.NewLine}This is a known issue if PowerShell 7 is installed from the Store or MSIX (see https://github.com/microsoft/winget-command-not-found/issues/3). If that isn't your case, please report an issue.", new List<string>(), FeedbackDisplayLayout.Portrait);
+            }
         }
 
         private Collection<PSObject> FindPackages(string query, ref bool tooManySuggestions, ref string packageMatchFilterField)
         {
             if (!_warmedUp)
             {
+                // Given that the warm-up was not done, it's no good to carry on because we
+                // will likely get a newly created PowerShell object
+                // and pay the same overhead of the warmup method.
                 return new Collection<PSObject>();
             }
 
@@ -177,7 +220,7 @@ namespace Microsoft.WinGet.CommandNotFound
 
         public SuggestionPackage GetSuggestion(PredictionClient client, PredictionContext context, CancellationToken cancellationToken)
         {
-            if (_candidates is not null)
+            if (_candidates.Count() > 0)
             {
                 string input = context.InputAst.Extent.Text;
                 List<PredictiveSuggestion>? result = null;
@@ -203,7 +246,7 @@ namespace Microsoft.WinGet.CommandNotFound
         public void OnCommandLineAccepted(PredictionClient client, IReadOnlyList<string> history)
         {
             // Reset the candidate state.
-            _candidates = null;
+            _candidates.Clear();
         }
     }
 }

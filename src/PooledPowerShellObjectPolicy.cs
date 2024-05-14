@@ -12,11 +12,17 @@ namespace Microsoft.WinGet.CommandNotFound
     {
         private static readonly string[] WingetClientModuleName = new[] { "Microsoft.WinGet.Client" };
 
+        private static readonly InitialSessionState _initialSessionState;
+
+        static PooledPowerShellObjectPolicy()
+        {
+            _initialSessionState = InitialSessionState.CreateDefault2();
+            _initialSessionState.ImportPSModule(WingetClientModuleName);
+        }
+
         public System.Management.Automation.PowerShell Create()
         {
-            var iss = InitialSessionState.CreateDefault2();
-            iss.ImportPSModule(WingetClientModuleName);
-            return System.Management.Automation.PowerShell.Create(iss);
+            return System.Management.Automation.PowerShell.Create(_initialSessionState);
         }
 
         public bool Return(System.Management.Automation.PowerShell obj)
