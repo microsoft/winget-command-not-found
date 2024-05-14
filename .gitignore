@@ -1,0 +1,8 @@
+# build outputs
+bin
+obj
+src/bin
+src/obj
+
+# Visual Studio cache/options directory
+.vs/

@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <SuppressNetCoreSdkPreviewMessage>true</SuppressNetCoreSdkPreviewMessage>
+
+        <!-- Disable deps.json generation -->
+        <GenerateDependencyFile>false</GenerateDependencyFile>
+
+        <!-- Deploy the produced assembly -->
+        <PublishDir>..\bin\Microsoft.WinGet.CommandNotFound</PublishDir>
+
+        <RootNamespace>Microsoft.WinGet.CommandNotFound</RootNamespace>
+        <AssemblyName>Microsoft.WinGet.CommandNotFound</AssemblyName>
+      </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <!-- Disable PDB generation for the Release build -->
+        <DebugSymbols>false</DebugSymbols>
+        <DebugType>None</DebugType>
+      </PropertyGroup>
+
+    <ItemGroup>
+        <!-- PowerShell 7.4 already ships with an old version of Microsoft.Extensions.ObjectPool,
+             so don't use the latest version -->
+        <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="[5.0.17]">
+            <ExcludeAssets>contentFiles</ExcludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; compile; build; native; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="System.Management.Automation" Version="7.4.1">
+          <ExcludeAssets>contentFiles</ExcludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; compile; build; native; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <Content Include="Microsoft.WinGet.CommandNotFound.psd1;ValidateOS.psm1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
+      </ItemGroup>
+</Project>

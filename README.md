@@ -1,14 +1,22 @@
-# Project
+# winget-command-not-found
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+The `winget-command-not-found` module is a feedback provider plugin for PowerShell. This feedback provider leverages the Windows Package Manager to provide suggestions for packages to install when a native command cannot be found.
 
-As the maintainer of this project, please make a few updates:
+The [command-line predictor][command-line-predictor] feature in PowerShell enables this module to display these WinGet packages as predictive suggestions.
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+![Demo](./images/demo.png)
+
+## Requirements
+
+The `winget-comand-not-found` plugin is built on the `IFeedbackProvider` interface, which is available with PowerShell `7.4.0-preview.2` or above. To display prediction suggestions, you need [PSReadLine 2.2.6][psreadline-226] or above.
+
+- PowerShell `7.4.0-preview.2` or above
+- PSReadLine `2.2.6` or above
+
+## Documentation
+
+PowerShell feedback providers and predictors are written in C# and registered with the PowerShell [Subsystem Plugin Model][subsystem-plugin-model].
+To learn more, see "How to create a feedback provider" and ["How to create a command-line predictor"][how-to-create-predictor].
 
 ## Contributing
 
@@ -31,3 +39,8 @@ trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
+
+[command-line-predictor]: https://learn.microsoft.com/en-us/powershell/scripting/learn/shell/using-predictors
+[psreadline-226]: https://www.powershellgallery.com/packages/PSReadLine/2.2.6
+[subsystem-plugin-model]: https://docs.microsoft.com/powershell/scripting/learn/experimental-features#pssubsystempluginmodel
+[how-to-create-predictor]: https://docs.microsoft.com/powershell/scripting/dev-cross-plat/create-cmdline-predictor
