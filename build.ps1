@@ -33,8 +33,6 @@
 param(
     [switch] $Clean,
     [switch] $Bootstrap,
-    [switch] $Test,
-    [switch] $CheckHelpContent,
 
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Debug",
@@ -74,11 +72,9 @@ if (-not (Get-Module -Name InvokeBuild -ListAvailable)) {
     throw "Cannot find the 'InvokeBuild' module. Please specify '-Bootstrap' to install build dependencies."
 }
 
-# Build/Test step
-$buildTask = if ($Test) { "RunTests" } else { "ZipRelease" }
-$arguments = @{ Task = $buildTask; Configuration = $Configuration }
+# Build step
+$arguments = @{ Task = "ZipRelease"; Configuration = $Configuration }
 
 if ($Framework) { $arguments.Add("Framework", $Framework) }
-if ($CheckHelpContent) { $arguments.Add("CheckHelpContent", $true) }
 
 Invoke-Build @arguments

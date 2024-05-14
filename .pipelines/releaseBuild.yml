@@ -158,7 +158,7 @@ extends:
             TargetFolder: $(ob_outputDirectory)
 
         - pwsh: |
-            $versionInfo = Get-Item "$(signSrcPath)\Microsoft.WinGet.CommandNotFound.dll" | ForEach-Object VersionInfo
+            $versionInfo = Get-Item "$(signSrcPath)\Microsoft.WinGet.CommandNotFound.dll" | Select-Object -Expand VersionInfo
             $moduleVersion = $versionInfo.ProductVersion.Split('+')[0]
             $vstsCommandString = "vso[task.setvariable variable=ob_sdl_sbom_packageversion]${moduleVersion}"
 

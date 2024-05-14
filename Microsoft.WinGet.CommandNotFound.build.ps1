@@ -20,9 +20,7 @@ param(
     [string]$Configuration = (property Configuration Release),
 
     [ValidateSet("net8.0")]
-    [string]$Framework,
-
-    [switch]$CheckHelpContent
+    [string]$Framework
 )
 
 Import-Module "$PSScriptRoot/tools/helper.psm1"

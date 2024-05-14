@@ -25,8 +25,6 @@ namespace Microsoft.WinGet.CommandNotFound
 
         private bool _warmedUp;
 
-        private readonly StreamWriter _debugFile = new StreamWriter("C:\\Users\\cazamor\\Downloads\\winget-command-not-found.log");
-
         private WinGetCommandNotFoundFeedbackPredictor()
         {
             var provider = new DefaultObjectPoolProvider();
