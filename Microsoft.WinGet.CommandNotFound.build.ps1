@@ -179,7 +179,6 @@ task Publish -If ($Configuration -eq 'Release') {
         Path = $binDir
         NuGetApiKey = [PSCredential]::new("user", $nugetApiKey).GetNetworkCredential().Password
         Repository = "PSGallery"
-        ReleaseNotes = (Get-Content -Raw $binDir/Changes.txt)
         ProjectUri = 'https://github.com/Microsoft/winget-command-not-found'
     }
 
