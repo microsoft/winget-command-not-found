@@ -4,6 +4,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <SuppressNetCoreSdkPreviewMessage>true</SuppressNetCoreSdkPreviewMessage>
+        <Version>1.0.2</Version>
 
         <!-- Disable deps.json generation -->
         <GenerateDependencyFile>false</GenerateDependencyFile>
