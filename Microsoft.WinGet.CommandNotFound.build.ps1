@@ -77,7 +77,8 @@ task LayoutModule BuildMainModule, {
 
     # Copy module manifest, but fix the version to match what we've specified in the binary module.
     $moduleManifestContent = ConvertTo-CRLF (Get-Content -Path 'src/Microsoft.WinGet.CommandNotFound.psd1' -Raw)
-    $version = '1.0.2.0'
+    $versionInfo = (Get-ChildItem -Path $targetDir/Microsoft.WinGet.CommandNotFound.dll).VersionInfo
+    $version = $versionInfo.FileVersion
 
     $moduleManifestContent = [regex]::Replace($moduleManifestContent, "ModuleVersion = '.*'", "ModuleVersion = '$version'")
     $moduleManifestContent | Set-Content -Path $targetDir/Microsoft.WinGet.CommandNotFound.psd1
