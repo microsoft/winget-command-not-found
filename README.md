@@ -1,6 +1,6 @@
-# winget-command-not-found
+# Microsoft.WinGet.CommandNotFound
 
-The `winget-command-not-found` module is a feedback provider plugin for PowerShell. This feedback provider leverages the Windows Package Manager to provide suggestions for packages to install when a native command cannot be found.
+The `Microsoft.WinGet.CommandNotFound` module is a feedback provider plugin for PowerShell. This feedback provider leverages the Windows Package Manager to provide suggestions for packages to install when a native command cannot be found.
 
 The [command-line predictor][command-line-predictor] feature in PowerShell enables this module to display these WinGet packages as predictive suggestions.
 
@@ -8,10 +8,21 @@ The [command-line predictor][command-line-predictor] feature in PowerShell enabl
 
 ## Requirements
 
-The `winget-comand-not-found` plugin is built on the `IFeedbackProvider` interface, which is available with PowerShell `7.4.0-preview.2` or above. To display prediction suggestions, you need [PSReadLine 2.2.6][psreadline-226] or above.
+The `Microsoft.WinGet.CommandNotFound` PowerShell Module is built on the `IFeedbackProvider` interface, which is available with PowerShell `7.4.0-preview.2` or above. To display prediction suggestions, you need [PSReadLine 2.2.6][psreadline-226] or above.
 
 - PowerShell `7.4.0-preview.2` or above
 - PSReadLine `2.2.6` or above
+
+The following experimental features must be enabled:
+
+- `PSFeedbackProvider`
+- `PSCommandNotFoundSuggestion`
+
+They can be enabled by running the following commands:
+```PowerShell
+Enable-ExperimentalFeature PSFeedbackProvider
+Enable-ExperimentalFeature PSCommandNotFoundSuggestion
+```
 
 ## Documentation
 
