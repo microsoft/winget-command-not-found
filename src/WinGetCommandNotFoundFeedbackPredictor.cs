@@ -23,8 +23,6 @@ namespace Microsoft.WinGet.CommandNotFound
 
         private List<string> _candidates = new List<string>();
 
-        private bool _warmedUp;
-
         private WinGetCommandNotFoundFeedbackPredictor()
         {
             var provider = new DefaultObjectPoolProvider();
@@ -49,10 +47,10 @@ namespace Microsoft.WinGet.CommandNotFound
                     .AddParameter("Count", 1)
                     .InvokeAsync();
             }
+            catch (Exception /*ex*/) {}
             finally
             {
                 _pool.Return(ps);
-                _warmedUp = true;
             }
         }
 
@@ -145,14 +143,6 @@ namespace Microsoft.WinGet.CommandNotFound
 
         private Collection<PSObject> FindPackages(string query, ref bool tooManySuggestions, ref string packageMatchFilterField)
         {
-            if (!_warmedUp)
-            {
-                // Given that the warm-up was not done, it's no good to carry on because we
-                // will likely get a newly created PowerShell object
-                // and pay the same overhead of the warmup method.
-                return new Collection<PSObject>();
-            }
-
             var ps = _pool.Get();
             try
             {
