@@ -53,6 +53,7 @@ namespace Microsoft.WinGet.CommandNotFound
             finally
             {
                 _pool.Return(ps);
+                _warmedUp = true;
             }
         }
 
