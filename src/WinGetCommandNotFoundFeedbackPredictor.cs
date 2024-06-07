@@ -49,6 +49,7 @@ namespace Microsoft.WinGet.CommandNotFound
                     .AddParameter("Count", 1)
                     .InvokeAsync();
             }
+            catch (Exception /*ex*/) {}
             finally
             {
                 _pool.Return(ps);
