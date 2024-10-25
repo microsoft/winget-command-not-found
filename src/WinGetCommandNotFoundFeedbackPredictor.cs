@@ -133,7 +133,7 @@ namespace Microsoft.WinGet.CommandNotFound
                     null;
 
                 return new FeedbackItem(
-                    "Try installing this package using winget:",
+                    "Try installing this package using WinGet:",
                     _candidates,
                     footerMessage,
                     FeedbackDisplayLayout.Portrait);
