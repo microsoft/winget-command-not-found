@@ -49,7 +49,7 @@ namespace Microsoft.WinGet.CommandNotFound
                     .AddParameter("Count", 1)
                     .InvokeAsync();
             }
-            catch (Exception /*ex*/) {}
+            catch (Exception /*ex*/) { }
             finally
             {
                 _pool.Return(ps);
@@ -104,6 +104,10 @@ namespace Microsoft.WinGet.CommandNotFound
         /// </summary>
         public FeedbackItem? GetFeedback(FeedbackContext context, CancellationToken token)
         {
+#if DEBUG
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+#endif
+
             var target = (string)context.LastError!.TargetObject;
             if (target is null)
             {
@@ -129,8 +133,13 @@ namespace Microsoft.WinGet.CommandNotFound
 
                 // Build footer message
                 var footerMessage = tooManySuggestions ?
-                    string.Format(CultureInfo.InvariantCulture, "Additional results can be found using \"winget search --{0} {1}\"", packageMatchFilterField, target) :
+                    string.Format(CultureInfo.InvariantCulture, "Additional results can be found using \"winget search --{0} {1}\".", packageMatchFilterField, target) :
                     null;
+
+#if DEBUG
+                sw.Stop();
+                footerMessage += string.Format(CultureInfo.InvariantCulture, "{0}Search performed in {1} ms.", footerMessage is not null ? $"{Environment.NewLine}" : string.Empty, sw.ElapsedMilliseconds);
+#endif
 
                 return new FeedbackItem(
                     "Try installing this package using WinGet:",
@@ -163,11 +172,19 @@ namespace Microsoft.WinGet.CommandNotFound
                 };
 
                 // 1) Search by command
+#if DEBUG
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+#endif
                 var pkgList = ps.AddCommand("Find-WinGetPackage")
                     .AddParameter("Command", query)
                     .AddParameter("MatchOption", "StartsWithCaseInsensitive")
                     .AddParameters(common)
                     .Invoke();
+#if DEBUG
+                sw.Stop();
+                Console.WriteLine($"[DEBUG] Searched by command; Found {pkgList.Count} packages in {sw.ElapsedMilliseconds} ms");
+#endif
+
                 if (pkgList.Count > 0)
                 {
                     tooManySuggestions = pkgList.Count > _maxSuggestions;
@@ -178,11 +195,18 @@ namespace Microsoft.WinGet.CommandNotFound
                 // 2) No matches found,
                 //    search by name
                 ps.Commands.Clear();
+#if DEBUG
+                sw.Restart();
+#endif
                 pkgList = ps.AddCommand("Find-WinGetPackage")
                     .AddParameter("Name", query)
                     .AddParameter("MatchOption", "ContainsCaseInsensitive")
                     .AddParameters(common)
                     .Invoke();
+#if DEBUG
+                sw.Stop();
+                Console.WriteLine($"[DEBUG] Searched by name; Found {pkgList.Count} packages in {sw.ElapsedMilliseconds} ms");
+#endif
                 if (pkgList.Count > 0)
                 {
                     tooManySuggestions = pkgList.Count > _maxSuggestions;
@@ -193,6 +217,9 @@ namespace Microsoft.WinGet.CommandNotFound
                 // 3) No matches found,
                 //    search by moniker
                 ps.Commands.Clear();
+#if DEBUG
+                sw.Restart();
+#endif
                 pkgList = ps.AddCommand("Find-WinGetPackage")
                     .AddParameter("Moniker", query)
                     .AddParameter("MatchOption", "ContainsCaseInsensitive")
@@ -200,6 +227,10 @@ namespace Microsoft.WinGet.CommandNotFound
                     .Invoke();
                 tooManySuggestions = pkgList.Count > _maxSuggestions;
                 packageMatchFilterField = "moniker";
+#if DEBUG
+                sw.Stop();
+                Console.WriteLine($"[DEBUG] Searched by moniker; Found {pkgList.Count} packages in {sw.ElapsedMilliseconds} ms");
+#endif
                 return pkgList;
             }
             finally
