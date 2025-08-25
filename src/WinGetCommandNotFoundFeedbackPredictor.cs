@@ -42,18 +42,30 @@ namespace Microsoft.WinGet.CommandNotFound
 
         private async void WarmUp()
         {
-            var ps = _pool.Get();
+            const int prewarm = 3;
+            var acquired = new List<System.Management.Automation.PowerShell>();
             try
             {
-                await ps.AddCommand("Find-WinGetPackage")
-                    .AddParameter("Count", 1)
-                    .InvokeAsync();
+                for (int i = 0; i < prewarm; i++)
+                {
+                    var ps = _pool.Get();
+                    acquired.Add(ps);
+                    try
+                    {
+                        await ps.AddCommand("Find-WinGetPackage")
+                                .AddParameter("Count", 1)
+                                .InvokeAsync();
+                    }
+                    catch (Exception /*ex*/) { /* ignore */ }
+                }
             }
-            catch (Exception /*ex*/) { }
             finally
             {
-                _pool.Return(ps);
-                _warmedUp = true;
+                foreach (var ps in acquired)
+                {
+                    _pool.Return(ps);
+                    _warmedUp = true;
+                }
             }
         }
 
@@ -138,7 +150,7 @@ namespace Microsoft.WinGet.CommandNotFound
 
 #if DEBUG
                 sw.Stop();
-                footerMessage += string.Format(CultureInfo.InvariantCulture, "{0}Search performed in {1} ms.", footerMessage is not null ? $"{Environment.NewLine}" : string.Empty, sw.ElapsedMilliseconds);
+                footerMessage += string.Format(CultureInfo.InvariantCulture, "{0}[DEBUG] Search performed in {1} ms.", footerMessage is not null ? $"{Environment.NewLine}" : string.Empty, sw.ElapsedMilliseconds);
 #endif
 
                 return new FeedbackItem(
@@ -163,79 +175,197 @@ namespace Microsoft.WinGet.CommandNotFound
                 return new Collection<PSObject>();
             }
 
-            var ps = _pool.Get();
+            var pooled = new List<System.Management.Automation.PowerShell>();
             try
             {
+                // Acquire up to three PowerShell objects from the pool to run searches concurrently.
+                var psCommand = _pool.Get();
+                var psName = _pool.Get();
+                var psMoniker = _pool.Get();
+
+                pooled.Add(psCommand);
+                pooled.Add(psName);
+                pooled.Add(psMoniker);
+
                 var common = new Hashtable()
                 {
                     ["Source"] = "winget",
                 };
 
-                // 1) Search by command
+                // If any two pooled objects are the same instance, running concurrently would
+                // cause reentrancy on the same PowerShell object. In that case, fall back to
+                // the original sequential behavior to preserve correctness.
+                if (ReferenceEquals(psCommand, psName) || ReferenceEquals(psCommand, psMoniker) || ReferenceEquals(psName, psMoniker))
+                {
 #if DEBUG
-                var sw = System.Diagnostics.Stopwatch.StartNew();
+                    Console.WriteLine($"[DEBUG] Multiple pooled runspaces detected as the same instance. Running sequentially.");
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
 #endif
-                var pkgList = ps.AddCommand("Find-WinGetPackage")
+                    var pkgList = psCommand.AddCommand("Find-WinGetPackage")
+                        .AddParameter("Command", query)
+                        .AddParameter("MatchOption", "StartsWithCaseInsensitive")
+                        .AddParameters(common)
+                        .Invoke();
+#if DEBUG
+                    sw.Stop();
+                    Console.WriteLine($"[DEBUG] Searched by command; Found {pkgList.Count} packages in {sw.ElapsedMilliseconds} ms");
+#endif
+
+                    if (pkgList.Count > 0)
+                    {
+                        tooManySuggestions = pkgList.Count > _maxSuggestions;
+                        packageMatchFilterField = "command";
+                        return pkgList;
+                    }
+
+                    psCommand.Commands.Clear();
+#if DEBUG
+                    sw.Restart();
+#endif
+                    pkgList = psCommand.AddCommand("Find-WinGetPackage")
+                        .AddParameter("Name", query)
+                        .AddParameter("MatchOption", "ContainsCaseInsensitive")
+                        .AddParameters(common)
+                        .Invoke();
+#if DEBUG
+                    sw.Stop();
+                    Console.WriteLine($"[DEBUG] Searched by name; Found {pkgList.Count} packages in {sw.ElapsedMilliseconds} ms");
+#endif
+                    if (pkgList.Count > 0)
+                    {
+                        tooManySuggestions = pkgList.Count > _maxSuggestions;
+                        packageMatchFilterField = "name";
+                        return pkgList;
+                    }
+
+                    psCommand.Commands.Clear();
+#if DEBUG
+                    sw.Restart();
+#endif
+                    pkgList = psCommand.AddCommand("Find-WinGetPackage")
+                        .AddParameter("Moniker", query)
+                        .AddParameter("MatchOption", "ContainsCaseInsensitive")
+                        .AddParameters(common)
+                        .Invoke();
+
+                    tooManySuggestions = pkgList.Count > _maxSuggestions;
+                    packageMatchFilterField = "moniker";
+#if DEBUG
+                    sw.Stop();
+                    Console.WriteLine($"[DEBUG] Searched by moniker; Found {pkgList.Count} packages in {sw.ElapsedMilliseconds} ms");
+#endif
+                    return pkgList;
+                }
+
+#if DEBUG
+                Console.WriteLine($"[DEBUG] Performing searches by command, name, and moniker concurrently");
+#endif
+
+                // Start all three searches concurrently using InvokeAsync
+                dynamic taskCommand = psCommand.AddCommand("Find-WinGetPackage")
                     .AddParameter("Command", query)
                     .AddParameter("MatchOption", "StartsWithCaseInsensitive")
                     .AddParameters(common)
-                    .Invoke();
-#if DEBUG
-                sw.Stop();
-                Console.WriteLine($"[DEBUG] Searched by command; Found {pkgList.Count} packages in {sw.ElapsedMilliseconds} ms");
-#endif
+                    .InvokeAsync();
 
-                if (pkgList.Count > 0)
-                {
-                    tooManySuggestions = pkgList.Count > _maxSuggestions;
-                    packageMatchFilterField = "command";
-                    return pkgList;
-                }
-
-                // 2) No matches found,
-                //    search by name
-                ps.Commands.Clear();
-#if DEBUG
-                sw.Restart();
-#endif
-                pkgList = ps.AddCommand("Find-WinGetPackage")
+                dynamic taskName = psName.AddCommand("Find-WinGetPackage")
                     .AddParameter("Name", query)
                     .AddParameter("MatchOption", "ContainsCaseInsensitive")
                     .AddParameters(common)
-                    .Invoke();
-#if DEBUG
-                sw.Stop();
-                Console.WriteLine($"[DEBUG] Searched by name; Found {pkgList.Count} packages in {sw.ElapsedMilliseconds} ms");
-#endif
-                if (pkgList.Count > 0)
-                {
-                    tooManySuggestions = pkgList.Count > _maxSuggestions;
-                    packageMatchFilterField = "name";
-                    return pkgList;
-                }
+                    .InvokeAsync();
 
-                // 3) No matches found,
-                //    search by moniker
-                ps.Commands.Clear();
-#if DEBUG
-                sw.Restart();
-#endif
-                pkgList = ps.AddCommand("Find-WinGetPackage")
+                dynamic taskMoniker = psMoniker.AddCommand("Find-WinGetPackage")
                     .AddParameter("Moniker", query)
                     .AddParameter("MatchOption", "ContainsCaseInsensitive")
                     .AddParameters(common)
-                    .Invoke();
-                tooManySuggestions = pkgList.Count > _maxSuggestions;
-                packageMatchFilterField = "moniker";
+                    .InvokeAsync();
+
+                // Wait for all tasks to complete (we select results by priority afterwards)
+                try
+                {
+                    Task.WaitAll((Task)taskCommand, (Task)taskName, (Task)taskMoniker);
+                }
+                catch
+                {
+                    // Ignore task exceptions here; we'll inspect results conservatively below.
+                }
+
+                Collection<PSObject> ToCollectionFromResult(object? res)
+                {
+                    if (res is Collection<PSObject> c)
+                    {
+                        return c;
+                    }
+
+                    if (res is System.Management.Automation.PSDataCollection<PSObject> d)
+                    {
+                        var list = new Collection<PSObject>();
+                        foreach (var p in d)
+                        {
+                            list.Add(p);
+                        }
+
+                        return list;
+                    }
+
+                    if (res is IEnumerable e)
+                    {
+                        var list = new Collection<PSObject>();
+                        foreach (var o in e)
+                        {
+                            if (o is PSObject pso)
+                            {
+                                list.Add(pso);
+                            }
+                            else
+                            {
+                                list.Add(PSObject.AsPSObject(o));
+                            }
+                        }
+
+                        return list;
+                    }
+
+                    return new Collection<PSObject>();
+                }
+
+                var cmdResults = ToCollectionFromResult(taskCommand.Result);
+                var nameResults = ToCollectionFromResult(taskName.Result);
+                var monikerResults = ToCollectionFromResult(taskMoniker.Result);
+
 #if DEBUG
-                sw.Stop();
-                Console.WriteLine($"[DEBUG] Searched by moniker; Found {pkgList.Count} packages in {sw.ElapsedMilliseconds} ms");
+                Console.WriteLine($"[DEBUG] Searched by command; Found {cmdResults.Count} packages");
+                Console.WriteLine($"[DEBUG] Searched by name; Found {nameResults.Count} packages");
+                Console.WriteLine($"[DEBUG] Searched by moniker; Found {monikerResults.Count} packages");
 #endif
-                return pkgList;
+
+                // Prioritize command -> name -> moniker
+                if (cmdResults.Count > 0)
+                {
+                    tooManySuggestions = cmdResults.Count > _maxSuggestions;
+                    packageMatchFilterField = "command";
+                    return cmdResults;
+                }
+                else if (nameResults.Count > 0)
+                {
+                    tooManySuggestions = nameResults.Count > _maxSuggestions;
+                    packageMatchFilterField = "name";
+                    return nameResults;
+                }
+                tooManySuggestions = monikerResults.Count > _maxSuggestions;
+                packageMatchFilterField = "moniker";
+                return monikerResults;
             }
             finally
             {
-                _pool.Return(ps);
+                // Return all PowerShell objects back to the pool
+                foreach (var p in pooled)
+                {
+                    if (p is not null)
+                    {
+                        try { _pool.Return(p); } catch { /* ignore */ }
+                    }
+                }
             }
         }
 
