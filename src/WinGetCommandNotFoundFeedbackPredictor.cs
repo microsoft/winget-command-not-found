@@ -40,7 +40,7 @@ namespace Microsoft.WinGet.CommandNotFound
 
         public Dictionary<string, string>? FunctionsToDefine => null;
 
-        private async void WarmUp()
+        private async Task WarmUpAsync()
         {
             var ps = _pool.Get();
             try
@@ -64,7 +64,15 @@ namespace Microsoft.WinGet.CommandNotFound
                 return;
             }
 
-            WarmUp();
+            WarmUpAsync().ContinueWith(t =>
+            {
+                // GH #20: Find-WinGetPackage (called asynchronously in WarmUpAsync()) may throw.
+                //   If that happens, we can detect it here and disable the predictor.
+                if (t.IsFaulted)
+                {
+                    _warmedUp = false;
+                }
+            });
 
             SubsystemManager.RegisterSubsystem(SubsystemKind.FeedbackProvider, this);
             SubsystemManager.RegisterSubsystem(SubsystemKind.CommandPredictor, this);
