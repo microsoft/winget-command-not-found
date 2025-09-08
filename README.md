@@ -25,7 +25,7 @@ Enable-ExperimentalFeature PSCommandNotFoundSuggestion
 ```
 
 > [!NOTE]
->  `PSCommandNotFoundSuggestion` became mainstream and doesn't have to be enabled manually on PowerShell 7.5 or above
+> `PSCommandNotFoundSuggestion` is available by default on PowerShell 7.5 and above
 
 ---
 
