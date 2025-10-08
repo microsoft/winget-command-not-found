@@ -49,7 +49,7 @@ namespace Microsoft.WinGet.CommandNotFound
                     .AddParameter("Count", 1)
                     .InvokeAsync();
             }
-            catch (Exception /*ex*/) {}
+            catch (Exception /*ex*/) { }
             finally
             {
                 _pool.Return(ps);
@@ -121,8 +121,7 @@ namespace Microsoft.WinGet.CommandNotFound
             try
             {
                 bool tooManySuggestions = false;
-                string packageMatchFilterField = "command";
-                var pkgList = FindPackages(target, ref tooManySuggestions, ref packageMatchFilterField);
+                var pkgList = FindPackages(target, ref tooManySuggestions);
                 if (pkgList.Count == 0)
                 {
                     return null;
@@ -137,7 +136,7 @@ namespace Microsoft.WinGet.CommandNotFound
 
                 // Build footer message
                 var footerMessage = tooManySuggestions ?
-                    string.Format(CultureInfo.InvariantCulture, "Additional results can be found using \"winget search --{0} {1}\"", packageMatchFilterField, target) :
+                    string.Format(CultureInfo.InvariantCulture, "Additional results can be found using \"winget search --command {1}\"", target) :
                     null;
 
                 return new FeedbackItem(
@@ -146,13 +145,13 @@ namespace Microsoft.WinGet.CommandNotFound
                     footerMessage,
                     FeedbackDisplayLayout.Portrait);
             }
-            catch (Exception /*ex*/)
+            catch (Exception ex)
             {
-                return new FeedbackItem($"Failed to execute WinGet Command Not Found.{Environment.NewLine}This is a known issue if PowerShell 7 is installed from the Store or MSIX (see https://github.com/microsoft/winget-command-not-found/issues/3). If that isn't your case, please report an issue.", new List<string>(), FeedbackDisplayLayout.Portrait);
+                return new FeedbackItem(string.Format($"Failed to execute WinGet Command Not Found.{Environment.NewLine}{0}", ex.ToString()), new List<string>(), FeedbackDisplayLayout.Portrait);
             }
         }
 
-        private Collection<PSObject> FindPackages(string query, ref bool tooManySuggestions, ref string packageMatchFilterField)
+        private Collection<PSObject> FindPackages(string query, ref bool tooManySuggestions)
         {
             if (!_warmedUp)
             {
@@ -170,44 +169,12 @@ namespace Microsoft.WinGet.CommandNotFound
                     ["Source"] = "winget",
                 };
 
-                // 1) Search by command
                 var pkgList = ps.AddCommand("Find-WinGetPackage")
                     .AddParameter("Command", query)
-                    .AddParameter("MatchOption", "StartsWithCaseInsensitive")
-                    .AddParameters(common)
-                    .Invoke();
-                if (pkgList.Count > 0)
-                {
-                    tooManySuggestions = pkgList.Count > _maxSuggestions;
-                    packageMatchFilterField = "command";
-                    return pkgList;
-                }
-
-                // 2) No matches found,
-                //    search by name
-                ps.Commands.Clear();
-                pkgList = ps.AddCommand("Find-WinGetPackage")
-                    .AddParameter("Name", query)
-                    .AddParameter("MatchOption", "ContainsCaseInsensitive")
-                    .AddParameters(common)
-                    .Invoke();
-                if (pkgList.Count > 0)
-                {
-                    tooManySuggestions = pkgList.Count > _maxSuggestions;
-                    packageMatchFilterField = "name";
-                    return pkgList;
-                }
-
-                // 3) No matches found,
-                //    search by moniker
-                ps.Commands.Clear();
-                pkgList = ps.AddCommand("Find-WinGetPackage")
-                    .AddParameter("Moniker", query)
-                    .AddParameter("MatchOption", "ContainsCaseInsensitive")
+                    .AddParameter("MatchOption", "Equals")
                     .AddParameters(common)
                     .Invoke();
                 tooManySuggestions = pkgList.Count > _maxSuggestions;
-                packageMatchFilterField = "moniker";
                 return pkgList;
             }
             finally
