@@ -84,6 +84,30 @@ extends:
             # Set ob_restore_phase to run this step before '🔒 Setup Signing' step.
             ob_restore_phase: true
 
+        - task: NuGetAuthenticate@1
+          displayName: NuGet Authentication
+          env:
+            # Set ob_restore_phase to run this step before '🔒 Setup Signing' step.
+            ob_restore_phase: true
+
+        - task: PowerShell@2
+          displayName: Install InvokeBuild from custom PowerShell Gallery Repo
+          env:
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            # Set ob_restore_phase to run this step before '🔒 Setup Signing' step.
+            ob_restore_phase: true
+          inputs:
+            pwsh: true
+            targetType: inline
+            script: |-
+              $MachineToken = $env:SYSTEM_ACCESSTOKEN | ConvertTo-SecureString -AsPlainText -Force
+              $Credential = [PSCredential]::new("ONEBRANCH_TOKEN", $MachineToken)
+              $MachineToken = $null
+              $Feed = "https://pkgs.dev.azure.com/shine-oss/winget-command-not-found/_packaging/Dependencies/nuget/v3/index.json"
+              Register-PSResourceRepository -Name "PSGalleryUpstream" -Uri $Feed -Trusted
+              Get-PSResourceRepository
+              Install-PSResource -Name InvokeBuild -Repository "PSGalleryUpstream" -Credential $Credential
+
         - pwsh: |
             Write-Host "PS Version: $($PSVersionTable.PSVersion)"
             Set-Location -Path '$(repoRoot)'
@@ -139,13 +163,13 @@ extends:
                         $WrongCert.Add($_.Path, $_.SignerCertificate.Subject)
                     }
                 }
-
+        
             if ($HasInvalidFiles) { throw "Authenticode verification failed. There is one or more invalid files." }
             if ($WrongCert.Count -gt 0) {
                 $WrongCert
                 throw "Certificate should have the subject starts with 'Microsoft Corporation'"
             }
-
+        
             Write-Host "Display files in the folder ..." -ForegroundColor Yellow
             Get-ChildItem -Path $(signSrcPath) -Recurse | Out-String -Width 120
           displayName: 'Verify the signed files'
@@ -203,20 +227,38 @@ extends:
             New-Item -Path $(nugetPath) -ItemType Directory > $null
           displayName: Capture artifacts structure
 
-        - pwsh: |
-            try {
-              Install-Module -Name Microsoft.PowerShell.PSResourceGet -Scope CurrentUser -Force
-              $RepoName = "WCNFLocal"
-              mkdir $(nugetPath) -ErrorAction SilentlyContinue
-              Register-PSResourceRepository -Name $RepoName -Uri $(nugetPath) -Trusted
-              # -SkipModuleManifestValidate: module needs Pwsh 7.4 but machine is on an earlier version
-              # -SkipDependenciesCheck: module depends on Microsoft.WinGet.Client which will definitely be available on PSGallery
-              Publish-PSResource -Verbose -Path $(signOutPath) -Repository $RepoName -SkipModuleManifestValidate -SkipDependenciesCheck
-            } finally {
-              Unregister-PSRepository -Name $RepoName -ErrorAction SilentlyContinue
-            }
-            Get-ChildItem -Path $(nugetPath)
+        - task: PowerShell@2
           displayName: 'Create the NuGet package'
+          env:
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          inputs:
+            pwsh: true
+            targetType: inline
+            script: |-
+              $MachineToken = $env:SYSTEM_ACCESSTOKEN | ConvertTo-SecureString -AsPlainText -Force
+              $Credential = [PSCredential]::new("ONEBRANCH_TOKEN", $MachineToken)
+              $MachineToken = $null
+              $Feed = "https://pkgs.dev.azure.com/shine-oss/winget-command-not-found/_packaging/Dependencies/nuget/v3/index.json"
+              
+              # Register the Dependencies feed so Publish-PSResource can validate RequiredModules
+              Register-PSResourceRepository -Name "PSGalleryUpstream" -Uri $Feed -Trusted
+
+              Get-PSResourceRepository
+              
+              Install-PSResource -Name Microsoft.PowerShell.PSResourceGet -Repository "PSGalleryUpstream" -Credential $Credential
+              
+              $RepoName = "WCNFLocal"
+              try {
+                mkdir $(nugetPath) -ErrorAction SilentlyContinue
+                Register-PSResourceRepository -Name $RepoName -Uri $(nugetPath) -Trusted
+                # -SkipModuleManifestValidate: installing dependencies is not supported on V3 server protocol repos, so we cannot install Microsoft.WinGet.Client
+                # -SkipDependenciesCheck: module depends on Microsoft.WinGet.Client which will definitely be available on PSGallery
+                Publish-PSResource -Verbose -Path $(signOutPath) -Repository $RepoName -SkipModuleManifestValidate -SkipDependenciesCheck
+              } finally {
+                Unregister-PSRepository -Name $RepoName -ErrorAction SilentlyContinue
+                Unregister-PSRepository -Name "PSGalleryUpstream" -ErrorAction SilentlyContinue
+              }
+              Get-ChildItem -Path $(nugetPath)
 
         - task: onebranch.pipeline.signing@1
           displayName: Sign nupkg
