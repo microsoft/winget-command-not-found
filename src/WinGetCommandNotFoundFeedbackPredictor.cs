@@ -136,7 +136,7 @@ namespace Microsoft.WinGet.CommandNotFound
 
                 // Build footer message
                 var footerMessage = tooManySuggestions ?
-                    string.Format(CultureInfo.InvariantCulture, "Additional results can be found using \"winget search --command {1}\"", target) :
+                    string.Format(CultureInfo.InvariantCulture, "Additional results can be found using \"winget search --command {0}\"", target) :
                     null;
 
                 return new FeedbackItem(
