@@ -17,6 +17,6 @@
 
 ## 📋 Issue Type
 <!-- Select the type that best describes this PR -->
-- [ ] Bug fix
+- [ ] Bug fix: Closes #XXXX
 - [ ] Feature
 - [ ] Task
