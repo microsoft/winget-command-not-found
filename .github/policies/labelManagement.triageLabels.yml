@@ -1,0 +1,41 @@
+id: labelAdded.triageLabels
+name: GitOps.PullRequestIssueManagement
+description: Handlers for triaging issues when various labels are applied from Triage
+owner:
+resource: repository
+disabled: false
+where:
+configuration:
+  resourceManagementConfiguration:
+    eventResponderTasks:
+      - description: >-
+          When specific labels are added to an issue
+          * Remove the Needs-Triage label
+        if:
+          - payloadType: Issues
+          - or:
+              - labelAdded:
+                  label: Issue-Bug
+              - labelAdded:
+                  label: Issue-Feature
+              - labelAdded:
+                  label: Issue-Docs
+              - labelAdded:
+                  label: Needs-Attention
+              - labelAdded:
+                  label: Needs-Author-Feedback
+              - labelAdded:
+                  label: In-PR
+              - labelAdded:
+                  label: Help-Wanted
+              - labelAdded:
+                  label: Blocking-Issue
+              - labelAdded:
+                  label: Resolution-Duplicate
+        then:
+          - removeLabel:
+              label: Needs-Triage
+        # The policy service should trigger even when the label was added by the policy service
+        triggerOnOwnActions: true
+onFailure:
+onSuccess:
