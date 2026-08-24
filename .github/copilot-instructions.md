@@ -16,6 +16,7 @@
 
 - PowerShell 7.4+ (built on the `IFeedbackProvider` interface)
 - [PSReadLine](https://www.powershellgallery.com/packages/PSReadLine/2.2.6) 2.2.6+ for predictive suggestions
+- Microsoft.WinGet.Client 1.11.460+
 - Experimental features `PSFeedbackProvider` and `PSCommandNotFoundSuggestion` must be enabled (the latter is on by default in PowerShell 7.5+):
   ```powershell
   Enable-ExperimentalFeature PSFeedbackProvider
@@ -51,6 +52,6 @@ Import-Module .\src\bin\Debug\net8.0\Microsoft.WinGet.CommandNotFound.psd1
 
 ## Contributing
 
-- This repo currently has **no issue templates** under `.github/ISSUE_TEMPLATE/` — when filing issues, ensure Issue Type (Bug/Feature/Task) is set explicitly since there's no template to auto-apply it.
-- Review `CONTRIBUTING.md`/CLA requirements as described in `README.md`.
+- Prefer the issue templates under `.github/ISSUE_TEMPLATE/`, which set the issue type and initial triage labels automatically.
+- Review the CLA requirements described in `README.md`.
 - CI runs via Azure Pipelines (`.pipelines/`).
